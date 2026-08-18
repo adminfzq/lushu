@@ -1,0 +1,2445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>沿途 · 行程加载中</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&amp;family=Noto+Serif+SC:wght@200;300;400;500&amp;family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&amp;family=EB+Garamond:ital,wght@0,400;1,400&amp;display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:   #f5f0e8;
+  --cream2:  #ede8de;
+  --white:   #faf7f2;
+  --bd:      #ddd8ce;
+  --bd2:     #c8c3b8;
+  --amber:   #b07c18;
+  --amber2:  #d09820;
+  --teal:    #287870;
+  --coral:   #b83838;
+  --green:   #287848;
+  --violet:  #5838b0;
+  --ink:     #1c1810;
+  --ink2:    #3a3428;
+  --gray:    #787068;
+  --gray2:   #a8a098;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, .72, 0, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  height: 100vh;
+}
+
+/* ═══════════════════════ TIMELINE ═══════════════════════ */
+#timeline {
+  background: var(--cream2);
+  border-right: 1px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+.tl-head {
+  padding: 14px 12px 10px;
+  border-bottom: 1px solid var(--bd);
+  flex-shrink: 0;
+}
+.tl-eyebrow {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.tl-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.35;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+.tl-title em { font-style: normal; color: var(--amber); padding: 0 3px; }
+.tl-stats-row {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--gray);
+  padding-top: 8px;
+  border-top: 1px dashed var(--bd);
+  margin-top: 2px;
+}
+.tl-stat { display: flex; flex-direction: column; gap: 1px; }
+.tl-stat-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1;
+}
+.tl-stat-lbl {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--gray2);
+  text-transform: uppercase;
+}
+
+/* Timeline items */
+#tl-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd2) transparent;
+  position: relative;
+}
+#tl-items::-webkit-scrollbar { width: 3px; }
+#tl-items::-webkit-scrollbar-thumb { background: var(--bd2); }
+
+/* Vertical rail behind dots */
+#tl-items::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 12px; bottom: 28px;
+  width: 1px;
+  background: var(--bd2);
+}
+
+.tli {
+  position: relative;
+  padding: 10px 10px 10px 34px;
+  cursor: pointer;
+  transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
+  border-left: 2px solid transparent;
+}
+.tli:active { transform: scale(.98); }
+.tli.active {
+  background: var(--white);
+  border-left-color: var(--amber);
+}
+.tli-dot {
+  position: absolute;
+  left: 17px;
+  top: 14px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2px solid var(--teal);
+  z-index: 2;
+  transition: transform 180ms var(--ease-out), background 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+.tli[data-t="star"]    .tli-dot { border-color: var(--amber2); }
+.tli[data-t="holiday"] .tli-dot { border-color: var(--coral); }
+.tli[data-t="start"]   .tli-dot,
+.tli[data-t="end"]     .tli-dot { border-color: var(--green); }
+.tli.active .tli-dot {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 3px rgba(176,124,24,.18);
+  background: var(--amber2);
+}
+.tli-date {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--gray);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.tli.active .tli-date { color: var(--amber); }
+.tli-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.tli[data-t="star"] .tli-name { font-weight: 400; }
+.tli-w {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--gray);
+}
+.tli-w .ico { font-size: 11px; }
+.tli-w .risk { color: var(--coral); font-weight: 600; }
+.tli-warn {
+  position: absolute;
+  top: 10px; right: 8px;
+  font-size: 9px;
+  color: var(--coral);
+  font-weight: 700;
+}
+.tli-star {
+  position: absolute;
+  top: 10px; right: 8px;
+  font-size: 9px;
+  color: var(--amber2);
+}
+
+/* ═══════════════════════ MAP ═══════════════════════ */
+#map-wrap { position: relative; overflow: hidden; }
+#map { height: 100vh; width: 100%; }
+.map-config-note {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(176,124,24,.12), transparent 34%),
+    radial-gradient(circle at 80% 75%, rgba(40,120,112,.12), transparent 36%),
+    var(--cream);
+}
+.map-config-card {
+  max-width: 520px;
+  padding: 28px 30px;
+  border: 1px solid var(--bd2);
+  border-radius: 8px;
+  background: rgba(250,247,242,.94);
+  box-shadow: 0 18px 50px rgba(28,24,16,.08);
+  text-align: center;
+}
+.map-config-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+.map-config-card p { color: var(--gray); font-size: 13px; line-height: 1.7; }
+.map-config-card code { color: var(--teal); font-family: monospace; }
+#map-wrap::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to right, var(--cream2) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Overlay: Legend (top-left of map) */
+#legend {
+  position: absolute;
+  top: 16px; left: 58px;
+  z-index: 400;
+  display: flex;
+  gap: 5px;
+  background: rgba(250,247,242,.92);
+  backdrop-filter: blur(8px);
+  padding: 7px 10px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+.lchip {
+  font-size: 9.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gray);
+  font-weight: 500;
+}
+.lchip .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+#agent-status {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 7px 11px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  background: rgba(250,247,242,.94);
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  backdrop-filter: blur(8px);
+  color: var(--gray);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+.agent-state { display: inline-flex; align-items: center; gap: 5px; }
+.agent-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.agent-state.verified::before { background: var(--green); }
+.agent-state.pending::before { background: var(--amber2); }
+.agent-state.neutral::before { background: var(--teal); }
+.agent-state + .agent-state { padding-left: 8px; border-left: 1px solid var(--bd); }
+
+/* Route comparison: visible before drilling into a day. */
+#route-chooser {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  z-index: 360;
+  width: min(560px, calc(100% - 42px));
+  transform: translateX(-50%);
+  transition: opacity 180ms var(--ease-out), transform 220ms var(--ease-out);
+}
+#route-chooser.detail-open {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -8px);
+}
+.route-chooser-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 4px 6px;
+  color: var(--gray);
+  font-size: 9px;
+  letter-spacing: .4px;
+}
+.route-chooser-head strong {
+  color: var(--ink2);
+  font-weight: 600;
+}
+.route-options { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.route-loop-card {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--teal);
+  border-radius: 7px;
+  background: rgba(250,247,242,.96);
+  box-shadow: 0 0 0 2px rgba(40,120,112,.1), 0 6px 18px rgba(28,24,16,.1);
+  backdrop-filter: blur(10px);
+  color: var(--ink2);
+  text-align: left;
+}
+.route-option {
+  appearance: none;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 7px;
+  background: rgba(250,247,242,.96);
+  box-shadow: 0 3px 12px rgba(28,24,16,.08);
+  backdrop-filter: blur(10px);
+  color: var(--ink2);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 160ms;
+}
+.route-option:active { transform: scale(.985); }
+.route-option[aria-pressed="true"] {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(40,120,112,.12), 0 6px 18px rgba(28,24,16,.1);
+}
+.route-option-top { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.route-option-name { font-size: 12px; font-weight: 700; }
+.route-option-badge {
+  padding: 2px 5px;
+  border-radius: 10px;
+  background: rgba(40,120,72,.1);
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 700;
+}
+.route-option:not([data-recommended="true"]) .route-option-badge {
+  background: rgba(176,124,24,.1);
+  color: var(--amber);
+}
+.route-option-metrics { display: block; color: var(--gray); font-size: 10px; line-height: 1.5; }
+.route-option-reason {
+  display: block;
+  margin-top: 5px;
+  color: var(--gray);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+#route-choice-note {
+  margin: 7px 4px 0;
+  padding: 7px 10px;
+  border-left: 2px solid var(--teal);
+  border-radius: 2px;
+  background: rgba(250,247,242,.94);
+  color: var(--gray);
+  font-size: 9.5px;
+  line-height: 1.5;
+  box-shadow: 0 2px 9px rgba(28,24,16,.06);
+}
+.route-preview-marker {
+  padding: 4px 8px;
+  border: 1px solid rgba(88,56,176,.5);
+  border-radius: 14px;
+  background: rgba(248,245,255,.96);
+  color: var(--violet);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(28,24,16,.12);
+}
+
+/* Overlay: Breadcrumb on selection */
+#bc {
+  display: none;
+  position: absolute;
+  bottom: 48px; left: 18px;
+  z-index: 400;
+  background: rgba(250,247,242,.96);
+  backdrop-filter: blur(8px);
+  padding: 0;
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(28,24,16,.1);
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+}
+#bc.show { display: flex; }
+#bc-back {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 13px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+  border-radius: inherit;
+}
+#bc-back:active { transform: scale(.97); }
+
+/* ═══════════════════════ MAP MARKERS ═══════════════════════ */
+/* City number disc */
+.mk {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px; font-weight: 700;
+  border: 2px solid;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+  transition: transform 180ms var(--ease-out), opacity 220ms var(--ease-out), box-shadow 180ms var(--ease-out);
+  cursor: pointer;
+}
+.mk.dimmed { opacity: .3; }
+.mk-star    { background: #fffbf0; border-color: #c08818; color: #9a6c10; }
+.mk-holiday { background: #fff5f5; border-color: #b83838; color: #963030; }
+.mk-normal  { background: #f0fbf9; border-color: #287870; color: #1e6058; }
+.mk-end     { background: #f0faf4; border-color: #287848; color: #1e6038; }
+
+/* Waypoint stop marker (dinner / overnight stop) */
+.mk-stop {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #f5f5ff;
+  border: 2px solid #7c7cbc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  color: #5a5a9a;
+  box-shadow: 0 1px 6px rgba(0,0,0,.15);
+  pointer-events: none;
+}
+.mk-stop-label {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 600;
+  color: #5a5a9a;
+  background: rgba(255,255,255,.85);
+  padding: 1px 4px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.mk-stop-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Weather chip (always visible above each city marker) */
+.wmk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.wmk.dimmed { opacity: .35; }
+.wmk-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,253,248,.96);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--bd);
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.wmk-row .ico { font-size: 12px; }
+.wmk-row .t { color: var(--gray); letter-spacing: .3px; }
+.wmk-row .tlo { color: var(--teal); }
+.wmk-row .thi { color: var(--coral); }
+.wmk-date {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  color: var(--gray2);
+  background: rgba(255,253,248,.92);
+  padding: 1px 6px;
+  border-radius: 2px;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+/* Rain warning badge - floats above weather chip */
+.rain-warn {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: linear-gradient(135deg, #c43838, #8a2020);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  box-shadow: 0 3px 10px rgba(196,56,56,.35);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.rain-warn[data-kind="drive"] {
+  background: linear-gradient(135deg, #b56f0b, #7b4700);
+  box-shadow: 0 3px 10px rgba(181,111,11,.3);
+}
+.rain-warn[data-kind="task"] {
+  background: linear-gradient(135deg, #6f57b8, #49348c);
+  box-shadow: 0 3px 10px rgba(88,56,176,.3);
+}
+.rain-warn[data-kind="plan"] {
+  background: linear-gradient(135deg, #287870, #17524d);
+  box-shadow: 0 3px 10px rgba(40,120,112,.28);
+}
+
+/* Place markers (sub-stops) */
+.mk-place {
+  width: 26px; height: 26px;
+  font-size: 10px;
+  background: #f8f5ff;
+  border-color: rgba(88,56,176,.5);
+  color: rgba(88,56,176,.9);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 220ms var(--ease-out), transform 240ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  border-radius: 50%;
+  border: 2px solid rgba(88,56,176,.5);
+  display: flex; align-items:center; justify-content:center;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,.14);
+  cursor: pointer;
+}
+.mk-place.show { opacity: 1; transform: scale(1); }
+.mk-place.focused {
+  border-color: #c08818;
+  color: #9a6c10;
+  background: #fffbf0;
+  box-shadow: 0 0 14px rgba(192,136,24,.45);
+  transform: scale(1.18);
+}
+
+/* ═══════════════════════ RICH INFO WINDOW ═══════════════════════ */
+.amap-info-content { padding: 0 !important; }
+.amap-info-close { top: 12px !important; right: 12px !important; }
+
+.iw-shell {
+  position: relative;
+  width: 580px;
+  border-radius: 4px;
+}
+.iw {
+  font-family: -apple-system, 'PingFang SC', 'DM Sans', sans-serif;
+  width: 580px;
+  max-height: 58vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: var(--white);
+  border-radius: 4px;
+  scrollbar-width: auto;
+  scrollbar-color: var(--bd2) var(--cream);
+}
+.iw::-webkit-scrollbar { width: 10px; }
+.iw::-webkit-scrollbar-track { background: var(--cream); border-radius: 0 4px 4px 0; }
+.iw::-webkit-scrollbar-thumb {
+  background: var(--bd2);
+  border: 2px solid var(--cream);
+  border-radius: 8px;
+}
+
+.iw-scroll-nav {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 42px;
+  padding: 5px 12px;
+  border-top: 1px solid var(--bd);
+  border-radius: 0 0 4px 4px;
+  background: rgba(250,247,242,.98);
+}
+.iw-shell.is-scrollable .iw-scroll-nav { display: flex; }
+.iw-shell.is-scrollable .iw {
+  max-height: calc(58vh - 42px);
+  border-radius: 4px 4px 0 0;
+}
+.iw-scroll-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  padding: 6px 9px;
+  color: var(--teal);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 140ms var(--ease-out), background 140ms ease, opacity 140ms ease;
+}
+.iw-scroll-btn:active { transform: scale(.96); }
+.iw-scroll-btn:disabled { opacity: .3; cursor: default; transform: none; }
+.iw-end {
+  margin: 12px 16px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--bd);
+  color: var(--gray2);
+  font-size: 9px;
+  letter-spacing: .8px;
+  text-align: center;
+}
+
+.iw-head {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--bd);
+  position: relative;
+}
+.iw-date {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.iw-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 19px;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+.iw-title {
+  font-size: 11.5px;
+  color: var(--gray);
+  line-height: 1.5;
+  font-weight: 300;
+}
+.iw-km {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--teal);
+  border-bottom: 1px solid var(--teal);
+  padding-bottom: 1px;
+}
+
+/* Weather strip */
+.iw-weather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--bd);
+  font-size: 11px;
+  color: var(--ink2);
+}
+.iw-weather.risk-high { background: linear-gradient(90deg, rgba(196,56,56,.08), rgba(196,56,56,.03)); border-bottom-color: rgba(196,56,56,.3); }
+.iw-weather.risk-low  { background: linear-gradient(90deg, rgba(176,124,24,.08), rgba(176,124,24,.03)); }
+.iw-w-ico { font-size: 22px; flex-shrink: 0; }
+.iw-w-main {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.iw-w-row1 { font-weight: 500; font-size: 13px; color: var(--ink); }
+.iw-w-row2 { font-size: 10px; color: var(--gray); letter-spacing: .3px; }
+.iw-w-note {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--gray);
+  font-style: italic;
+  text-align: right;
+  max-width: 180px;
+  line-height: 1.45;
+}
+.iw-weather.risk-high .iw-w-note { color: var(--coral); font-weight: 500; font-style: normal; }
+.iw-weather.pending {
+  gap: 8px;
+  color: var(--gray);
+  background: rgba(237,232,222,.55);
+}
+.iw-weather.pending .iw-w-ico { font-size: 16px; color: var(--amber); }
+.iw-weather.pending strong { color: var(--ink2); font-weight: 500; }
+
+/* Plan B box */
+.iw-planb {
+  margin: 8px 16px;
+  padding: 10px 12px;
+  background: rgba(196,56,56,.06);
+  border-left: 3px solid var(--coral);
+  border-radius: 2px;
+}
+.iw-planb-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--coral);
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+.iw-planb-items { list-style: none; }
+.iw-planb-items li {
+  font-size: 11.5px;
+  color: var(--ink2);
+  line-height: 1.75;
+  padding: 3px 0;
+  display: flex;
+  gap: 2px;
+}
+
+/* Sections */
+.iw-sect {
+  padding: 10px 16px 4px;
+}
+.iw-sect-top { border-top: 1px solid var(--bd); }
+.iw-sect-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  color: var(--violet);
+  display: flex; align-items: center; gap: 8px;
+}
+.iw-sect-lbl::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bd);
+}
+.iw-brief {
+  font-size: 11.5px;
+  color: var(--ink2);
+  line-height: 1.7;
+  margin: 8px 16px 10px;
+  padding: 8px 10px;
+  background: var(--cream);
+  border-radius: 2px;
+}
+
+/* Places in popup */
+.iw-place {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+  border-bottom: 1px dashed var(--bd);
+  transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
+  margin: 0 -18px;
+  padding: 9px 18px;
+}
+.iw-place:last-child { border-bottom: none; }
+.iw-place:active { transform: scale(.99); }
+.iw-place.focused { background: rgba(176,124,24,.07); }
+.iw-place-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(88,56,176,.08);
+  border: 1.5px solid rgba(88,56,176,.4);
+  color: var(--violet);
+  display: flex; align-items:center; justify-content:center;
+  font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+.iw-place.focused .iw-place-dot {
+  background: rgba(176,124,24,.12);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.iw-place-main { flex: 1; min-width: 0; }
+.iw-place-n { font-size: 13px; font-weight: 500; color: var(--ink2); margin-bottom: 3px; }
+.iw-place-d { font-size: 11.5px; color: var(--gray); line-height: 1.7; }
+
+/* Spots */
+.iw-spot {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--bd);
+  border-left: 3px solid transparent;
+  border-radius: 2px;
+  background: var(--cream);
+}
+.iw-spot:last-child { margin-bottom: 0; }
+.iw-spot[data-tag="must"] { border-left-color: var(--teal); }
+.iw-spot[data-tag="food"] { border-left-color: var(--amber2); }
+.iw-spot[data-tag="tip"]  { border-left-color: var(--green); }
+.iw-spot[data-tag="warn"] { border-left-color: var(--coral); }
+.iw-spot-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.iw-stag {
+  font-size: 9px; font-weight: 600; letter-spacing: .5px;
+  padding: 1px 6px; border-radius: 2px; text-transform: uppercase;
+}
+.stag-must { background: rgba(40,120,112,.09); color: var(--teal); }
+.stag-food { background: rgba(176,124,24,.09); color: var(--amber); }
+.stag-tip  { background: rgba(40,120,72,.09); color: var(--green); }
+.stag-warn { background: rgba(184,56,56,.09); color: var(--coral); }
+.iw-spot-n { font-size: 11.5px; font-weight: 500; color: var(--ink2); }
+.iw-spot-d { font-size: 11px; color: var(--gray); line-height: 1.7; }
+.iw-evidence {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 9px;
+  background: rgba(176,124,24,.1);
+  color: var(--amber);
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Planning rationale */
+.iw-hist {
+  margin: 6px 16px 14px;
+  padding: 10px 12px;
+  background: var(--cream);
+  border: 1px solid var(--bd);
+  border-top: 2px solid var(--amber2);
+  border-radius: 0 0 2px 2px;
+  position: relative;
+}
+.iw-hist::before {
+  content: '→';
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  color: var(--amber2);
+  opacity: .1;
+  position: absolute;
+  top: 2px; left: 8px;
+  line-height: 1;
+  pointer-events: none;
+}
+.iw-hist-lbl {
+  font-size: 9px; font-weight: 600; letter-spacing: 2.5px;
+  color: var(--amber); text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.iw-hist-text {
+  font-family: -apple-system, 'PingFang SC', 'DM Sans', sans-serif;
+  font-size: 11.5px; color: var(--ink2);
+  line-height: 1.75;
+}
+
+/* ═══════════════════════ ROADBOOK PANEL ═══════════════════════ */
+#rb-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 200;
+}
+.rb-trigger {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--white);
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: .5px;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,.09);
+  transition: background 160ms var(--ease-out), box-shadow 160ms var(--ease-out), transform 160ms var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.rb-trigger:active { transform: scale(.97); }
+.rb-trigger svg { flex-shrink: 0; }
+
+/* Overlay backdrop */
+#rb-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(28,24,16,.45);
+  z-index: 800;
+  backdrop-filter: blur(2px);
+}
+#rb-overlay.show { display: block; }
+
+/* Panel */
+#rb-panel {
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  width: min(480px, 92vw);
+  background: var(--white);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 32px rgba(0,0,0,.18);
+  transform: translateX(-100%);
+  transition: transform 280ms var(--ease-drawer);
+}
+#rb-panel.open { transform: translateX(0); }
+
+.rb-head {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  background: var(--cream2);
+}
+.rb-head-text { flex: 1; min-width: 0; }
+.rb-eyebrow {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.rb-heading {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--ink);
+}
+.rb-close {
+  appearance: none;
+  border: 0;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items:center; justify-content:center;
+  background: var(--bd);
+  color: var(--gray);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.rb-close:active { transform: scale(.94); }
+
+.rb-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 32px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd2) transparent;
+}
+.rb-body::-webkit-scrollbar { width: 3px; }
+.rb-body::-webkit-scrollbar-thumb { background: var(--bd2); }
+
+.rb-preflight {
+  margin-bottom: 20px;
+  padding: 14px 15px;
+  border: 1px solid rgba(176,124,24,.35);
+  border-left: 3px solid var(--amber2);
+  border-radius: 6px;
+  background: rgba(176,124,24,.06);
+}
+.rb-preflight-title {
+  margin-bottom: 9px;
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.rb-preflight ul { padding-left: 17px; }
+.rb-preflight li {
+  margin-bottom: 6px;
+  color: var(--ink2);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.rb-preflight li:last-child { margin-bottom: 0; }
+
+/* Day block */
+.rb-day {
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px dashed var(--bd);
+}
+.rb-day:last-child { border-bottom: none; margin-bottom: 0; }
+
+.rb-day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rb-day-date {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--amber);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.rb-day-city {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.rb-day-km {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--teal);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.rb-day-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--gray);
+  margin-bottom: 10px;
+  padding: 3px 9px;
+  background: var(--cream);
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+}
+.rb-day-weather.risk { background: rgba(196,56,56,.07); border-color: rgba(196,56,56,.25); color: var(--coral); font-weight: 500; }
+
+/* Timeline entries */
+.rb-entries { display: flex; flex-direction: column; gap: 0; }
+.rb-entry {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 0 10px;
+  position: relative;
+}
+.rb-entry::before {
+  content: '';
+  position: absolute;
+  left: 44px;
+  top: 20px; bottom: -2px;
+  width: 1px;
+  background: var(--bd);
+}
+.rb-entry:last-child::before { display: none; }
+.rb-time {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--gray2);
+  text-align: right;
+  padding-top: 3px;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.rb-entry-right {
+  padding: 2px 0 14px 0;
+  position: relative;
+}
+.rb-entry-right::before {
+  content: '';
+  position: absolute;
+  left: -14px; top: 7px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--bd2);
+  border: 1.5px solid var(--white);
+}
+.rb-entry.key .rb-entry-right::before { background: var(--amber2); }
+.rb-entry.warn .rb-entry-right::before { background: var(--coral); }
+.rb-entry.drive .rb-entry-right::before { background: var(--teal); }
+.rb-action {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+.rb-note {
+  font-size: 11px;
+  color: var(--gray);
+  line-height: 1.6;
+}
+.rb-spots {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  background: var(--cream);
+  border-radius: 8px;
+  border-left: 3px solid var(--amber2);
+}
+.rb-spots-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: .5px;
+  margin: 6px 0 4px;
+  text-transform: uppercase;
+}
+.rb-spots-title:first-child { margin-top: 0; }
+.rb-spot-item {
+  margin-bottom: 6px;
+}
+.rb-spot-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Mobile override */
+@media (max-width: 1200px) {
+  #legend { display: none; }
+}
+
+@media (max-width: 767px) {
+  #rb-btn { top: 12px; right: 12px; }
+  #rb-panel { width: 100%; }
+}
+
+/* ═══════════════════════ MOBILE SHEET (detail view) ═══════════════════════ */
+#mobile-sheet {
+  display: none; /* JS controlled */
+}
+
+/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+@media (max-width: 767px) {
+  body { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  #map-wrap { grid-column: 1; grid-row: 1; height: 100vh; }
+  #map-wrap::before { display: none; }
+
+  /* ── Bottom Drawer ── */
+  #timeline {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 88vh;
+    border-right: none;
+    border-top: 1px solid var(--bd);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.16);
+    z-index: 500;
+    /* peek: show 124px */
+    transform: translateY(calc(88vh - 124px));
+    transition: transform 300ms var(--ease-drawer);
+    will-change: transform;
+  }
+  /* states driven by data-state attribute */
+  #timeline[data-state="half"] { transform: translateY(calc(88vh - 46vh)); }
+  #timeline[data-state="full"] { transform: translateY(0); }
+
+  /* Drag handle */
+  .tl-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+    cursor: grab;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl-handle-pill {
+    width: 40px; height: 5px;
+    background: var(--bd2);
+    border-radius: 3px;
+    transition: background .15s;
+  }
+  #timeline[data-state="full"] .tl-handle-pill { background: var(--amber2); }
+
+  /* Compact header in drawer */
+  .tl-head {
+    padding: 4px 16px 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl-eyebrow { display: none; }
+  .tl-title { font-size: 13px; margin-bottom: 6px; }
+  .tl-stats-row { gap: 12px; }
+  .tl-stat-val { font-size: 13px; }
+  .tl-stat-lbl { font-size: 7.5px; }
+
+  /* Scrollable timeline list */
+  #tl-items {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(88vh - 104px);
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  /* Bigger touch targets */
+  .tli { padding: 12px 12px 12px 36px; min-height: 48px; }
+  .tli-dot { top: 16px; }
+  .tli-name { font-size: 14px; }
+  .tli-date { font-size: 8px; }
+
+  /* Mobile detail sheet — slides up over timeline */
+  #mobile-sheet {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: var(--white);
+    z-index: 10;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(100%);
+    transition: transform 280ms var(--ease-drawer);
+    border-radius: 20px 20px 0 0;
+  }
+  #mobile-sheet.open { transform: translateY(0); }
+
+  .ms-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px 10px;
+    background: var(--white);
+    border-bottom: 1px solid var(--bd);
+  }
+  .ms-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--cream);
+    color: var(--amber);
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ms-back:active { background: var(--cream2); }
+  .ms-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--ink);
+  }
+  .ms-date {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+  /* Sheet content: reuse .iw styles with full width */
+  #mobile-sheet .iw {
+    width: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+  #mobile-sheet .iw-shell { width: 100%; }
+  #mobile-sheet .iw-scroll-nav { display: none; }
+  #mobile-sheet .iw-end { margin-bottom: 16px; }
+  #mobile-sheet .iw-head { display: none; } /* header moved to ms-topbar */
+
+  /* Legend & breadcrumb on mobile */
+  #legend { display: none; }
+  #agent-status {
+    top: 12px;
+    left: 12px;
+    right: 108px;
+    justify-content: center;
+    transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    gap: 6px;
+    padding-inline: 8px;
+    font-size: 9px;
+  }
+  #agent-status .agent-state + .agent-state { padding-left: 6px; }
+  #bc {
+    display: none !important;
+  }
+
+  #community-status, #weather-status { display: none; }
+
+  #route-chooser {
+    top: 54px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    transform: none;
+  }
+  #route-chooser.detail-open { transform: translateY(-8px); }
+  .route-chooser-head { font-size: 8.5px; }
+  .route-options { gap: 6px; }
+  .route-option { padding: 8px 9px; }
+  .route-option-top { gap: 5px; margin-bottom: 3px; }
+  .route-option-name { font-size: 11px; }
+  .route-option-metrics { font-size: 9px; }
+  .route-option-reason { display: none; }
+  #route-choice-note {
+    max-height: 48px;
+    overflow-y: auto;
+    font-size: 9px;
+  }
+
+  /* Hide map weather chips & warning badges (integrated into sheet) */
+  .wmk { display: none; }
+  .rain-warn { display: none; }
+
+  /* InfoWindow: don't show on mobile (we use mobile-sheet) */
+  .amap-info-outer { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  #rb-panel { transition: none !important; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tli:hover { background: rgba(176,124,24,.05); }
+  #bc-back:hover { background: var(--cream); }
+  .mk:hover { transform: scale(1.15); box-shadow: 0 3px 14px rgba(0,0,0,.28); }
+  .iw-place:hover { background: var(--cream); }
+  .rb-trigger:hover { background: var(--cream); box-shadow: 0 3px 14px rgba(0,0,0,.13); }
+  .rb-close:hover { background: var(--bd2); color: var(--ink); }
+}
+</style>
+</head>
+<body>
+
+<div id="timeline">
+  <!-- Mobile drag handle -->
+  <div class="tl-handle" id="tl-handle" aria-label="展开收起">
+    <div class="tl-handle-pill"></div>
+  </div>
+
+  <!-- Mobile detail sheet (slides over timeline) -->
+  <div id="mobile-sheet">
+    <div class="ms-topbar">
+      <div class="ms-back" id="ms-back">←</div>
+      <div class="ms-title" id="ms-title"></div>
+      <div class="ms-date" id="ms-date"></div>
+    </div>
+    <div id="ms-content"></div>
+  </div>
+
+  <div class="tl-head" id="tl-head">
+    <div class="tl-eyebrow" id="tl-eyebrow">沿途决策 · 样板路线 01</div>
+    <div class="tl-title" id="tl-route-title">行程加载中</div>
+    <div class="tl-stats-row">
+      <div class="tl-stat"><div class="tl-stat-val" id="sv-km">—</div><div class="tl-stat-lbl">km</div></div>
+      <div class="tl-stat"><div class="tl-stat-val" id="sv-hr">—</div><div class="tl-stat-lbl">hr</div></div>
+      <div class="tl-stat"><div class="tl-stat-val" id="sv-days">—</div><div class="tl-stat-lbl">天</div></div>
+      <div class="tl-stat"><div class="tl-stat-val" id="sv-cities">—</div><div class="tl-stat-lbl">城</div></div>
+    </div>
+  </div>
+  <div id="tl-items"></div>
+</div>
+
+<!-- Roadbook overlay + panel -->
+<div id="rb-overlay"></div>
+<div id="rb-panel" aria-hidden="true">
+  <div class="rb-head">
+    <div class="rb-head-text">
+      <div class="rb-eyebrow" id="rb-eyebrow">Route Book · Sample 01</div>
+      <div class="rb-heading" id="rb-route-title">行程加载中</div>
+    </div>
+    <button class="rb-close" id="rb-close" type="button" aria-label="关闭文字路书">✕</button>
+  </div>
+  <div class="rb-body" id="rb-body"></div>
+</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="agent-status" aria-label="数据可信度状态">
+    <span class="agent-state verified" id="map-status">路线已核验</span>
+    <span class="agent-state neutral" id="weather-status">天气加载中</span>
+    <span class="agent-state neutral" id="community-status">社区来源加载中</span>
+    <span class="agent-state pending" id="evidence-status">地点证据加载中</span>
+  </div>
+
+  <section id="route-chooser" aria-label="路线选择">
+    <div class="route-chooser-head">
+      <strong id="route-chooser-title">路线方案</strong>
+      <span id="route-chooser-sub"></span>
+    </div>
+    <div class="route-options" id="route-options"></div>
+    <div id="route-choice-note" aria-live="polite"></div>
+  </section>
+
+  <!-- Roadbook button top-right -->
+  <div id="rb-btn">
+    <button class="rb-trigger" id="rb-open" type="button" aria-expanded="false" aria-controls="rb-panel">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="9" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/>
+        <line x1="3.5" y1="4" x2="7.5" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="3.5" y1="6.5" x2="7.5" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="3.5" y1="9" x2="6" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="11" cy="11" r="2.5" fill="currentColor" opacity=".3"/>
+        <path d="M10 11h2M11 10v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      文字路书
+    </button>
+  </div>
+
+  <div id="legend">
+    <div class="lchip"><div class="dot" style="background:var(--amber2)"></div>休整</div>
+    <div class="lchip"><div class="dot" style="background:var(--coral)"></div>风险提示</div>
+    <div class="lchip"><div class="dot" style="background:var(--teal)"></div>中转</div>
+    <div class="lchip"><div class="dot" style="background:var(--green)"></div>起终</div>
+    <div class="lchip"><div class="dot" style="background:var(--violet)"></div>候选点</div>
+  </div>
+
+  <div id="bc">
+    <button id="bc-back" type="button">← 返回路线总览</button>
+  </div>
+</div>
+
+<script src="./amap.config.local.js"></script>
+<script src="./trip.generated.js"></script>
+<script>
+const localAmapConfig = window.__AMAP_CONFIG__ || {};
+const AMAP_KEY    = localAmapConfig.key || 'c9fd4c46afc56ab26fd9ffb821c96b4b';
+const AMAP_SECRET = localAmapConfig.securityJsCode || '9cf97d6376f38ca916675c239fe85705';
+window._AMapSecurityConfig = { securityJsCode: AMAP_SECRET };
+
+if (window.TRIP_DATA?.meta) {
+  const meta = window.TRIP_DATA.meta;
+  document.title = `沿途 · ${meta.routeLabel} · ${meta.days}天自驾路书`;
+  document.getElementById('tl-eyebrow').textContent = meta.eyebrow;
+  document.getElementById('tl-route-title').textContent = meta.routeLabel;
+  document.getElementById('rb-eyebrow').textContent = `真实路书 · ${meta.startDate.slice(5).replace('-', '.')}—${meta.endDate.slice(5).replace('-', '.')}`;
+  document.getElementById('rb-route-title').textContent = meta.routeLabel;
+  document.getElementById('sv-km').textContent = Math.round(meta.totalKm).toLocaleString('zh-CN');
+  document.getElementById('sv-hr').textContent = Math.round(meta.totalDriveMin / 60);
+  document.getElementById('sv-days').textContent = meta.days;
+  document.getElementById('sv-cities').textContent = meta.cities;
+  const evidenceSummary = window.TRIP_DATA.evidenceSummary;
+  document.getElementById('map-status').textContent = `路线 ${meta.routeSegments}/${meta.routeSegments} 段 · ${Math.round(meta.totalKm).toLocaleString('zh-CN')}km`;
+  document.getElementById('weather-status').textContent = `天气 ${meta.weatherDays}/${meta.days} 天`;
+  document.getElementById('community-status').textContent = `社区 ${evidenceSummary.communitySources} 条来源`;
+  document.getElementById('evidence-status').textContent = `地点 ${evidenceSummary.communityVerified}/${evidenceSummary.candidates} 已交叉验证`;
+  document.getElementById('community-status').title = `已采集 ${evidenceSummary.communitySources} 条社区内容，不代表所有地点都已验证`;
+  document.getElementById('weather-status').title = `Open-Meteo 逐日预报，更新于 ${new Date(meta.weatherCheckedAt).toLocaleString('zh-CN')}`;
+  document.getElementById('evidence-status').title = `${evidenceSummary.communityVerified} 个地点已有跨平台证据；${evidenceSummary.communityJobs} 个仍需补充`;
+}
+
+/* ════════ HELPERS ════════ */
+// 所有来自 TRIP_DATA 的文本在插入 innerHTML 前统一转义，防止社区来源文本破坏渲染
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+/* ════════ DATA ════════ */
+// 页面只消费 scripts/run-trip.mjs 生成的 trip.generated.js，不内置任何具体行程
+const hasTripData = Boolean(window.TRIP_DATA && Array.isArray(window.TRIP_DATA.stops) && window.TRIP_DATA.stops.length);
+const stops = window.TRIP_DATA?.stops || [];
+const routeOptions = window.TRIP_DATA?.routeOptions || [];
+
+/* ════════ WAYPOINTS（途经打卡点，不可点击，仅显示位置）════════ */
+const waypoints = window.TRIP_DATA?.waypoints || [];
+
+/* ════════ WEATHER & PLAN B ════════ */
+const weather = window.TRIP_DATA?.weather || {};
+
+const planB = window.TRIP_DATA?.planB || {};
+
+/* ════════ STATE ════════ */
+let activeIdx = -1;
+let focusedPlaceIdx = -1;
+let map = null;
+let cityMarkers = [];
+let weatherMarkers = [];
+let warnMarkers = [];
+let placeMarkers = [];
+let ovPolylines = [];
+let cityPolylines = [];
+let activeInfo = null;
+let cityDetailTimer = null;
+let routePreviewPolylines = [];
+let routePreviewMarkers = [];
+// 主路线 = 推荐路线（缺省取第一条），任何按具体 id 写死的判断都会在下一次生成时失效
+const primaryRouteId = routeOptions.find(option => option.recommended)?.id ?? routeOptions[0]?.id ?? null;
+let activeRouteOptionId = primaryRouteId;
+
+function isMobile() { return window.innerWidth < 768; }
+
+function syncInfoScrollUi(element) {
+  const shell = element.closest('.iw-shell');
+  if (!shell) return;
+  const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
+  shell.classList.toggle('is-scrollable', maxScroll > 2);
+  const topButton = shell.querySelector('[data-edge="top"]');
+  const bottomButton = shell.querySelector('[data-edge="bottom"]');
+  if (topButton) topButton.disabled = element.scrollTop <= 2;
+  if (bottomButton) bottomButton.disabled = element.scrollTop >= maxScroll - 2;
+}
+
+function bindInfoScrollers(root = document) {
+  root.querySelectorAll('.iw').forEach(element => {
+    syncInfoScrollUi(element);
+    if (element.dataset.wheelBound) return;
+    element.dataset.wheelBound = 'true';
+    element.addEventListener('mouseenter', () => map?.setStatus({ scrollWheel: false }));
+    element.addEventListener('mouseleave', () => map?.setStatus({ scrollWheel: true }));
+    element.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
+    element.addEventListener('touchmove', event => event.stopPropagation(), { passive: true });
+    element.addEventListener('scroll', () => syncInfoScrollUi(element), { passive: true });
+  });
+}
+
+window.scrollInfoPanel = function(button, edge) {
+  const element = button.closest('.iw-shell')?.querySelector('.iw');
+  if (!element) return;
+  element.scrollTo({
+    top: edge === 'top' ? 0 : element.scrollHeight,
+    behavior: 'auto',
+  });
+  requestAnimationFrame(() => syncInfoScrollUi(element));
+};
+
+/* ════════ MOBILE DRAWER ════════ */
+const tlEl2 = document.getElementById('timeline');
+const handleEl = document.getElementById('tl-handle');
+let drawerState = 'peek'; // peek | half | full
+let touchStartY = 0;
+let handleDragging = false; // 仅当手势始于抽屉把手时才响应滑动
+
+function setDrawer(state) {
+  drawerState = state;
+  tlEl2.dataset.state = state === 'peek' ? '' : state;
+}
+
+handleEl.addEventListener('click', () => {
+  if (!isMobile()) return;
+  if (drawerState === 'peek') setDrawer('half');
+  else if (drawerState === 'half') setDrawer('full');
+  else setDrawer('peek');
+});
+
+handleEl.addEventListener('touchstart', e => {
+  handleDragging = true;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+// 系统手势打断时只触发 touchcancel，不复位会让下一次任意 touchend 被误判为滑动
+window.addEventListener('touchcancel', () => { handleDragging = false; }, { passive: true });
+window.addEventListener('touchend', e => {
+  if (!handleDragging) return;
+  handleDragging = false;
+  if (!isMobile()) return;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (dy < -50) { // swipe up
+    if (drawerState === 'peek') setDrawer('half');
+    else if (drawerState === 'half') setDrawer('full');
+  } else if (dy > 50) { // swipe down
+    if (drawerState === 'full') setDrawer('half');
+    else if (drawerState === 'half') setDrawer('peek');
+  }
+}, { passive: true });
+
+document.getElementById('tl-head').addEventListener('click', () => {
+  if (!isMobile()) return;
+  if (drawerState === 'peek') setDrawer('half');
+});
+
+/* ════════ MOBILE SHEET ════════ */
+const mobileSheet = document.getElementById('mobile-sheet');
+
+function showMobileSheet(idx) {
+  const s = stops[idx];
+  document.getElementById('ms-title').textContent = s.name;
+  document.getElementById('ms-date').textContent = s.d;
+  document.getElementById('ms-content').innerHTML = buildInfoHtml(s, idx);
+  bindInfoScrollers(mobileSheet);
+  mobileSheet.classList.add('open');
+  setDrawer('full');
+}
+
+function hideMobileSheet() {
+  mobileSheet.classList.remove('open');
+  setDrawer('half');
+}
+
+document.getElementById('ms-back').addEventListener('click', () => {
+  hideMobileSheet();
+  deselect();
+});
+
+const tagCls = { must:'stag-must', food:'stag-food', tip:'stag-tip', warn:'stag-warn' };
+const tagLbl = { must:'必玩', food:'美食', tip:'贴士', warn:'注意' };
+
+function hasForecast(w) {
+  return Boolean(w?.available && Number.isFinite(Number(w.hi)) && Number.isFinite(Number(w.lo)));
+}
+
+function planningAlert(s, w) {
+  const backup = s.planB || planB[s.d];
+  const title = backup?.title || '';
+
+  if (s.type === 'start' && (backup || w?.risk === 'high')) {
+    return {
+      label: '出发前查天气',
+      description: '出发前复查实时天气和预警，再决定是否按 09:00 出发',
+      kind: 'weather',
+    };
+  }
+  if (title.includes('可选事务') || title.includes('办事')) {
+    return {
+      label: '可选事务可跳过',
+      description: '可选事务失败或超时后立即降级，不挤占核心吃玩与休息时间',
+      kind: 'task',
+    };
+  }
+  if (title.includes('驾驶') || title.includes('长途') || title.includes('拆分')) {
+    return {
+      label: '疲劳时提前收车',
+      description: '驾驶疲劳或天气不佳时提前落脚，把长途拆成两段',
+      kind: 'drive',
+    };
+  }
+  if (w?.risk === 'high') {
+    return {
+      label: '天气风险需复查',
+      description: '该节点天气风险较高，出发前复查最新预报和预警',
+      kind: 'weather',
+    };
+  }
+  if (backup) {
+    return {
+      label: '已有应急预案',
+      description: title || '该节点已准备可执行的应急安排',
+      kind: 'plan',
+    };
+  }
+  return null;
+}
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ════════ TIMELINE ════════ */
+const tlEl = document.getElementById('tl-items');
+stops.forEach((s, i) => {
+  const w = s.weather || weather[s.d] || {};
+  const forecastReady = hasForecast(w);
+  const alert = planningAlert(s, w);
+  const isWarn = Boolean(alert);
+  const isStar = s.type === 'star' && !isWarn;
+  const el = document.createElement('div');
+  el.className = 'tli';
+  el.dataset.t = s.type;
+  el.id = 'tli-' + i;
+  el.innerHTML = `
+    <div class="tli-dot"></div>
+    <div class="tli-date">${escapeHtml(s.d)}</div>
+    <div class="tli-name">${escapeHtml(s.name)}</div>
+    <div class="tli-w">
+      <span class="ico">${forecastReady ? escapeHtml(w.icon) : '◷'}</span>
+      <span${isWarn && forecastReady ? ' class="risk"' : ''}>${forecastReady ? `${escapeHtml(w.hi)}°/${escapeHtml(w.lo)}°` : '天气待更新'}</span>
+    </div>
+    ${isWarn ? '<div class="tli-warn">⚠️</div>' : (isStar ? '<div class="tli-star">★</div>' : '')}
+  `;
+  if (alert) {
+    const warning = el.querySelector('.tli-warn');
+    warning.title = alert.description;
+    warning.setAttribute('aria-label', `${alert.label}：${alert.description}`);
+  }
+  el.addEventListener('click', () => selectCity(i));
+  tlEl.appendChild(el);
+});
+
+/* ════════ MAP HELPERS ════════ */
+function typeColor(t) {
+  return t==='star'?'#d09820' : t==='holiday'?'#b83838' : (t==='start'||t==='end')?'#287848' : '#287870';
+}
+function typeClass(t) {
+  return t==='star'?'mk-star' : t==='holiday'?'mk-holiday' : (t==='start'||t==='end')?'mk-end' : 'mk-normal';
+}
+
+function formatDriveTime(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `${hours}小时${rest ? `${rest}分` : ''}`;
+}
+
+function markerShift(idx, spacing) {
+  const current = stops[idx];
+  const colocated = stops
+    .map((stop, index) => ({ stop, index }))
+    .filter(item => item.stop.lng === current.lng && item.stop.lat === current.lat)
+    .map(item => item.index);
+  if (colocated.length < 2) return 0;
+  const rank = colocated.indexOf(idx);
+  return (rank - (colocated.length - 1) / 2) * spacing;
+}
+
+function warningClusterShift(idx) {
+  const current = stops[idx];
+  const nearby = stops
+    .map((stop, index) => ({ stop, index }))
+    .filter(item => {
+      const itemWeather = item.stop.weather || weather[item.stop.d] || {};
+      if (!planningAlert(item.stop, itemWeather)) return false;
+      const latitudeScale = Math.cos((current.lat * Math.PI) / 180);
+      const dx = (item.stop.lng - current.lng) * latitudeScale;
+      const dy = item.stop.lat - current.lat;
+      return Math.hypot(dx, dy) < 1.2;
+    })
+    .map(item => item.index);
+  if (nearby.length < 2) return 0;
+  const rank = nearby.indexOf(idx);
+  return (rank - (nearby.length - 1) / 2) * 124;
+}
+
+function clearRoutePreview() {
+  routePreviewPolylines.forEach(polyline => polyline.setMap(null));
+  routePreviewMarkers.forEach(marker => marker.setMap(null));
+  routePreviewPolylines = [];
+  routePreviewMarkers = [];
+}
+
+function fitRouteOverview() {
+  if (!map || !cityMarkers.length) return;
+  map.setFitView([...cityMarkers, ...ovPolylines.map(item => item.poly)], false, [210, 70, 110, 70]);
+}
+
+let routePreviewToken = 0;
+function drawRoutePreview(option) {
+  if (!map || !option?.cities?.length) return;
+  const token = ++routePreviewToken;
+  clearRoutePreview();
+  cityMarkers.forEach(marker => marker.hide());
+  weatherMarkers.forEach(marker => marker.hide());
+  warnMarkers.forEach(marker => marker.hide());
+  ovPolylines.forEach(item => item.poly.setOptions({ strokeOpacity: .12, strokeWeight: 2.5 }));
+
+  option.cities.forEach((city, index) => {
+    const [lng, lat] = city.location.split(',').map(Number);
+    const element = document.createElement('div');
+    element.className = 'route-preview-marker';
+    element.textContent = `${index + 1} · ${city.name}`;
+    routePreviewMarkers.push(new AMap.Marker({
+      position: [lng, lat],
+      content: element,
+      offset: new AMap.Pixel(-30, -14),
+      map,
+      zIndex: 180 + index,
+    }));
+  });
+
+  let segmentIndex = 0;
+  const next = () => {
+    if (token !== routePreviewToken) return;
+    if (segmentIndex >= option.cities.length - 1) {
+      map.setFitView([...routePreviewMarkers, ...routePreviewPolylines], false, [210, 70, 120, 70]);
+      return;
+    }
+    const from = option.cities[segmentIndex];
+    const to = option.cities[segmentIndex + 1];
+    segmentIndex += 1;
+    const driving = new AMap.Driving({ map: null, hideMarkers: true, autoFitView: false });
+    driving.search(from.location.split(',').map(Number), to.location.split(',').map(Number), (status, result) => {
+      if (token !== routePreviewToken) return;
+      const path = [];
+      if (status === 'complete' && result.routes?.[0]) {
+        result.routes[0].steps.forEach(step => step.path.forEach(point => path.push([point.lng, point.lat])));
+      } else {
+        path.push(from.location.split(',').map(Number), to.location.split(',').map(Number));
+      }
+      routePreviewPolylines.push(new AMap.Polyline({
+        path,
+        strokeColor: '#5838b0',
+        strokeWeight: 5,
+        strokeOpacity: .82,
+        strokeStyle: status === 'complete' ? 'solid' : 'dashed',
+        showDir: status === 'complete',
+        map,
+        zIndex: 160,
+      }));
+      setTimeout(next, 350);
+    });
+  };
+  next();
+}
+
+// 应用主路线视图：恢复总览标记与折线（0.85），备选预览一律清除
+function applyPrimaryRouteView({ resetView = true } = {}) {
+  if (!map) return;
+  routePreviewToken += 1;
+  clearRoutePreview();
+  cityMarkers.forEach(marker => marker.show());
+  weatherMarkers.forEach(marker => marker.show());
+  warnMarkers.forEach(marker => marker.show());
+  ovPolylines.forEach(item => item.poly.setOptions({ strokeOpacity: .85, strokeWeight: 4 }));
+  if (resetView) fitRouteOverview();
+}
+
+function selectRouteOption(optionId, { resetView = true } = {}) {
+  const option = routeOptions.find(item => item.id === optionId);
+  if (!option) return;
+  activeRouteOptionId = option.id;
+  document.querySelectorAll('.route-option').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.optionId === option.id));
+  });
+  const delta = option.delta_vs_recommended || {};
+  const deltaText = delta.distance_km > 0
+    ? `比推荐线多 ${Math.round(delta.distance_km)}km、${formatDriveTime(delta.duration_min)}，多 ${delta.driving_days} 个驾驶日。`
+    : '当前方案采用这条路线。';
+  document.getElementById('route-choice-note').textContent = `吃玩优先 · ${option.reason} ${deltaText}`;
+  document.getElementById('tl-eyebrow').textContent = option.id === primaryRouteId
+    ? (window.TRIP_DATA?.meta?.eyebrow || '当前逐日安排')
+    : '备选路线仅预览 · 左侧逐日安排仍按推荐线';
+
+  if (!map) return;
+  if (option.id === primaryRouteId) {
+    applyPrimaryRouteView({ resetView });
+  } else {
+    if (activeIdx !== -1) deselect();
+    drawRoutePreview(option);
+  }
+}
+
+function renderRouteOptions() {
+  const chooser = document.getElementById('route-chooser');
+  const container = document.getElementById('route-options');
+  if (!routeOptions.length) {
+    chooser.hidden = true;
+    return;
+  }
+  // 头部标题与副标题一律来自生成数据，模板不留具体行程文案
+  const primary = routeOptions.find(option => option.id === primaryRouteId) || routeOptions[0];
+  document.getElementById('route-chooser-title').textContent = primary.label || '路线方案';
+  document.getElementById('route-chooser-sub').textContent = primary.fit || window.TRIP_DATA?.meta?.routeLabel || '';
+  chooser.setAttribute('aria-label', primary.label || '路线选择');
+  if (routeOptions.length === 1) {
+    const option = routeOptions[0];
+    container.innerHTML = `
+      <div class="route-loop-card" data-option-id="${escapeHtml(option.id)}">
+        <span class="route-option-top">
+          <span class="route-option-name">${escapeHtml(option.label)}</span>
+          <span class="route-option-badge">已采用</span>
+        </span>
+        <span class="route-option-metrics">${Math.round(option.totals.distance_km).toLocaleString('zh-CN')}km · ${formatDriveTime(option.totals.duration_min)} · ${option.totals.driving_days} 个驾驶日</span>
+        <span class="route-option-reason">${escapeHtml(option.fit)}</span>
+      </div>`;
+    // 提示语按路线形态自适应：首尾同城视为往返环线，否则是单程路线
+    const isLoop = option.cities?.length > 1 && option.cities[0]?.name === option.cities.at(-1)?.name;
+    document.getElementById('route-choice-note').textContent = `${isLoop ? '这是一条完整往返，不是去程二选一。' : '这是当前唯一的完整路线方案。'}${option.reason}`;
+    document.getElementById('tl-eyebrow').textContent = window.TRIP_DATA?.meta?.eyebrow || '当前逐日安排';
+    // 单路线也走统一的主路线路径：总览折线 0.85，路段加载完成后 fitRouteOverview
+    applyPrimaryRouteView({ resetView: false });
+    return;
+  }
+  container.innerHTML = routeOptions.map(option => `
+    <button class="route-option" type="button" data-option-id="${escapeHtml(option.id)}"
+      data-recommended="${option.recommended}" aria-pressed="${option.id === activeRouteOptionId}">
+      <span class="route-option-top">
+        <span class="route-option-name">${escapeHtml(option.label)}</span>
+        <span class="route-option-badge">${option.recommended ? '推荐' : '备选'}</span>
+      </span>
+      <span class="route-option-metrics">${Math.round(option.totals.distance_km).toLocaleString('zh-CN')}km · ${formatDriveTime(option.totals.duration_min)} · ${option.totals.driving_days} 个驾驶日</span>
+      <span class="route-option-reason">${escapeHtml(option.fit)}</span>
+    </button>
+  `).join('');
+  container.querySelectorAll('.route-option').forEach(button => {
+    button.addEventListener('click', () => selectRouteOption(button.dataset.optionId));
+  });
+  selectRouteOption(activeRouteOptionId, { resetView: false });
+}
+
+renderRouteOptions();
+
+function buildInfoHtml(s, i) {
+  const w = s.weather || weather[s.d];
+  const pb = s.planB || planB[s.d];
+
+  const weatherHtml = hasForecast(w) ? `
+    <div class="iw-weather ${w.risk ? 'risk-' + escapeHtml(w.risk) : ''}">
+      <div class="iw-w-ico">${escapeHtml(w.icon)}</div>
+      <div class="iw-w-main">
+        <div class="iw-w-row1">${escapeHtml(w.desc)} · ${escapeHtml(w.hi)}° / ${escapeHtml(w.lo)}°</div>
+        <div class="iw-w-row2">风 ${escapeHtml(w.wind)}km/h · 降水 ${escapeHtml(w.rain)}mm${w.rangeDays > 1 ? `（${escapeHtml(w.rangeDays)}日累计）` : ''}</div>
+      </div>
+      ${w.note ? `<div class="iw-w-note">${escapeHtml(w.note)}</div>` : ''}
+    </div>` : `
+    <div class="iw-weather pending">
+      <div class="iw-w-ico">◷</div>
+      <div><strong>天气待更新</strong> · 确定出发日期后，在出发前 3 天获取实时预报</div>
+    </div>`;
+
+  const planBHtml = pb ? `
+    <div class="iw-planb">
+      <div class="iw-planb-title">${escapeHtml(pb.title)}</div>
+      <ul class="iw-planb-items">
+        ${pb.items.map(it => `<li>${escapeHtml(it)}</li>`).join('')}
+      </ul>
+    </div>` : '';
+
+  const briefHtml = `<div class="iw-brief">${escapeHtml(s.brief)}</div>`;
+
+  const placesHtml = (s.places && s.places.length) ? `
+    <div class="iw-sect iw-sect-top">
+      <div class="iw-sect-lbl">城内景点 · ${s.places.length} 站</div>
+      ${s.places.map((p, pi) => `
+        <div class="iw-place" id="iwp-${i}-${pi}" onclick="focusPlace(${i},${pi})">
+          <div class="iw-place-dot">${pi+1}</div>
+          <div class="iw-place-main">
+            <div class="iw-place-n">${escapeHtml(p.name)}</div>
+            <div class="iw-place-d">${escapeHtml(p.desc)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  const spotsHtml = (s.spots && s.spots.length) ? `
+    <div class="iw-sect iw-sect-top">
+      <div class="iw-sect-lbl">美食 · 贴士</div>
+      ${s.spots.map(sp => `
+        <div class="iw-spot" data-tag="${escapeHtml(sp.tag)}">
+          <div class="iw-spot-top">
+            <span class="iw-stag ${tagCls[sp.tag] || ''}">${tagLbl[sp.tag] || escapeHtml(sp.tag)}</span>
+            <span class="iw-spot-n">${escapeHtml(sp.name)}</span>
+            ${sp.tag === 'food' ? '<span class="iw-evidence">店铺未核验</span>' : ''}
+          </div>
+          <div class="iw-spot-d">${escapeHtml(sp.desc)}</div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  const histHtml = s.decision ? `
+    <div class="iw-hist">
+      <div class="iw-hist-lbl">为什么这样安排</div>
+      <div class="iw-hist-text">${escapeHtml(s.decision)}</div>
+    </div>` : '';
+
+  const kmHtml = `<span class="iw-km">${escapeHtml(s.status || (s.stay ? '在此停留' : '行程节点'))}</span>`;
+
+  return `<div class="iw-shell"><div class="iw">
+    <div class="iw-head">
+      <div class="iw-date">${escapeHtml(s.d)}</div>
+      <div class="iw-name">${escapeHtml(s.name)}</div>
+      <div class="iw-title">${escapeHtml(s.title)}</div>
+      ${kmHtml}
+    </div>
+    ${weatherHtml}
+    ${planBHtml}
+    ${briefHtml}
+    ${placesHtml}
+    ${spotsHtml}
+    ${histHtml}
+    <div class="iw-end">本日详情结束</div>
+  </div>
+  <div class="iw-scroll-nav" aria-label="详情滚动控制">
+    <button class="iw-scroll-btn" type="button" data-edge="top" onclick="scrollInfoPanel(this,'top')">↑ 顶部</button>
+    <button class="iw-scroll-btn" type="button" data-edge="bottom" onclick="scrollInfoPanel(this,'bottom')">↓ 底部</button>
+  </div></div>`;
+}
+
+/* ════════ SELECT CITY ════════ */
+function selectCity(idx) {
+  if (activeIdx === idx) { deselect(); return; }
+
+  activeIdx = idx;
+  focusedPlaceIdx = -1;
+
+  // Timeline active state
+  document.querySelectorAll('.tli').forEach(el => el.classList.remove('active'));
+  const tli = document.getElementById('tli-' + idx);
+  if (tli) {
+    tli.classList.add('active');
+    tli.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block:'nearest' });
+  }
+
+  // Breadcrumb
+  const s = stops[idx];
+  document.getElementById('bc').classList.add('show');
+  document.getElementById('route-chooser').classList.add('detail-open');
+
+  if (!map) return;
+
+  // Fly to city — offset center northward so marker sits in lower half,
+  // giving the InfoWindow room above without autoMove pushing into the sea
+  const zoomLevel = s.places?.length ? 12 : 8;
+  const latShift = zoomLevel === 12 ? 0.12 : 0.7;
+  map.setZoomAndCenter(zoomLevel, [s.lng, s.lat + latShift], false, reduceMotion ? 0 : 700);
+
+  // Dim other markers
+  setOverviewOpacity(0.22, idx);
+
+  if (isMobile()) {
+    // Mobile: show bottom sheet instead of InfoWindow
+    showMobileSheet(idx);
+  } else {
+    // Desktop: open rich InfoWindow on map
+    openInfoWindow(idx);
+  }
+
+  // Place markers
+  if (cityDetailTimer) clearTimeout(cityDetailTimer);
+  if (s.places && s.places.length > 0) {
+    cityDetailTimer = setTimeout(() => {
+      if (activeIdx !== idx) return;
+      showPlaceMarkers(idx);
+      planCityRoute(idx);
+    }, 800);
+  }
+}
+
+function openInfoWindow(idx) {
+  const s = stops[idx];
+  if (activeInfo) activeInfo.close();
+  map.setStatus({ scrollWheel: false });
+  activeInfo = new AMap.InfoWindow({
+    content: buildInfoHtml(s, idx),
+    offset: new AMap.Pixel(0, -36),
+    closeWhenClickMap: false,
+    autoMove: false
+  });
+  activeInfo.on('close', () => {
+    map?.setStatus({ scrollWheel: true });
+    if (activeIdx === idx) deselect();
+  });
+  activeInfo.open(map, [s.lng, s.lat]);
+  requestAnimationFrame(() => bindInfoScrollers());
+  setTimeout(() => bindInfoScrollers(), 80);
+}
+
+function deselect() {
+  activeIdx = -1;
+  if (cityDetailTimer) {
+    clearTimeout(cityDetailTimer);
+    cityDetailTimer = null;
+  }
+  focusedPlaceIdx = -1;
+  document.querySelectorAll('.tli').forEach(el => el.classList.remove('active'));
+  document.getElementById('bc').classList.remove('show');
+  document.getElementById('route-chooser').classList.remove('detail-open');
+  if (activeInfo) { activeInfo.close(); activeInfo = null; }
+  if (isMobile()) hideMobileSheet();
+  clearPlaceMarkers();
+  clearCityPolylines();
+  if (map) {
+    map.setStatus({ scrollWheel: true });
+    setOverviewOpacity(0.85, -1);
+    fitRouteOverview();
+  }
+}
+document.getElementById('bc-back').addEventListener('click', deselect);
+
+/* ════════ PLACE FOCUS ════════ */
+window.focusPlace = function(cityIdx, placeIdx) {
+  if (activeIdx !== cityIdx) selectCity(cityIdx);
+  focusedPlaceIdx = placeIdx;
+  const s = stops[cityIdx];
+  const p = s.places[placeIdx];
+
+  s.places.forEach((_, pi) => {
+    document.getElementById('iwp-' + cityIdx + '-' + pi)?.classList.toggle('focused', pi === placeIdx);
+  });
+  placeMarkers.forEach((mk, pi) => {
+    const el = document.querySelector('#pmk-' + pi);
+    if (el) el.classList.toggle('focused', pi === placeIdx);
+  });
+  if (map && p) {
+    map.setZoomAndCenter(15, [p.lng, p.lat], false, reduceMotion ? 0 : 400);
+  }
+};
+
+/* ════════ OVERVIEW OPACITY ════════ */
+function setOverviewOpacity(op, highlightIdx) {
+  ovPolylines.forEach(item => {
+    const linked = highlightIdx >= 0 && (item.toIdx === highlightIdx || item.fromIdx === highlightIdx);
+    item.poly.setOptions({
+      strokeOpacity: linked ? 0.82 : op,
+      strokeWeight: linked ? 5.5 : 4
+    });
+  });
+  cityMarkers.forEach((mk, i) => {
+    const el = mk._el;
+    if (el) el.classList.toggle('dimmed', highlightIdx >= 0 && i !== highlightIdx);
+  });
+  weatherMarkers.forEach(mk => {
+    // 天气纸片仅在有预报时创建，数组下标≠stop 下标，须用创建时记录的 _stopIdx
+    const el = mk._el;
+    if (el) el.classList.toggle('dimmed', highlightIdx >= 0 && mk._stopIdx !== highlightIdx);
+  });
+}
+
+/* ════════ PLACE MARKERS ════════ */
+function showPlaceMarkers(idx) {
+  clearPlaceMarkers();
+  const s = stops[idx];
+  s.places.forEach((p, pi) => {
+    const mkEl = document.createElement('div');
+    mkEl.className = 'mk-place';
+    mkEl.id = 'pmk-' + pi;
+    mkEl.textContent = pi + 1;
+    setTimeout(() => mkEl.classList.add('show'), 80 * pi);
+
+    const mk = new AMap.Marker({
+      position: [p.lng, p.lat], content: mkEl,
+      offset: new AMap.Pixel(-13, -13), map, zIndex: 200 + pi
+    });
+    mk.on('click', () => focusPlace(idx, pi));
+    placeMarkers.push(mk);
+  });
+}
+
+function clearPlaceMarkers() {
+  placeMarkers.forEach(m => m.setMap(null));
+  placeMarkers = [];
+}
+
+function clearCityPolylines() {
+  cityPolylines.forEach(p => p.setMap(null));
+  cityPolylines = [];
+}
+
+/* ════════ CITY ROUTE ════════ */
+function planCityRoute(idx) {
+  const places = stops[idx].places;
+  if (!places || places.length < 2) return;
+  const origin = [places[0].lng, places[0].lat];
+  const dest = [places[places.length-1].lng, places[places.length-1].lat];
+  const waypoints = places.slice(1,-1).map(p => new AMap.LngLat(p.lng, p.lat));
+  const drv = new AMap.Driving({ map: null, hideMarkers: true, autoFitView: false });
+
+  function onRoute(status, result) {
+    clearCityPolylines();
+    if (status === 'complete' && result.routes?.[0]) {
+      const r = result.routes[0];
+      const path = [];
+      r.steps.forEach(st => st.path.forEach(pt => path.push([pt.lng, pt.lat])));
+      cityPolylines.push(new AMap.Polyline({
+        path, strokeColor:'#7060d0', strokeWeight:4.5,
+        strokeOpacity:.88, showDir:true, map
+      }));
+    } else {
+      places.forEach((p, pi) => {
+        if (pi === places.length-1) return;
+        cityPolylines.push(new AMap.Polyline({
+          path: [[p.lng,p.lat],[places[pi+1].lng,places[pi+1].lat]],
+          strokeColor:'#7060d0', strokeWeight:2.5, strokeOpacity:.5,
+          strokeStyle:'dashed', strokeDasharray:[12,6], map
+        }));
+      });
+    }
+  }
+
+  if (waypoints.length > 0) {
+    drv.search(origin, dest, { waypoints }, onRoute);
+  } else {
+    drv.search(origin, dest, onRoute);
+  }
+}
+
+/* ════════ ROADBOOK ════════ */
+const rbDays = window.TRIP_DATA?.rbDays || [];
+
+function buildRoadbook() {
+  const body = document.getElementById('rb-body');
+  const preflight = window.TRIP_DATA?.preflight || [];
+  const preflightHtml = preflight.length ? `
+    <div class="rb-preflight">
+      <div class="rb-preflight-title">出发前 · 今晚必须完成</div>
+      <ul>${preflight.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+    </div>` : '';
+  body.innerHTML = preflightHtml + rbDays.map(day => {
+    const w = day.weather || {};
+    const isRisk = w.risk === 'high';
+    const weatherHtml = w.icon ? `
+      <div class="rb-day-weather ${isRisk ? 'risk' : ''}">
+        ${escapeHtml(w.icon)} ${escapeHtml(w.desc)}
+        ${hasForecast(w) ? `&nbsp;${escapeHtml(w.hi)}°/${escapeHtml(w.lo)}°` : ''}
+        ${hasForecast(w) && w.rain > 0 ? `&nbsp;· ${escapeHtml(w.rain)}mm` : ''}
+        ${w.note ? `&nbsp;· ${escapeHtml(w.note)}` : ''}
+      </div>` : '';
+
+    const entries = day.entries.map(e => `
+      <div class="rb-entry ${escapeHtml(e.cls || '')}">
+        <div class="rb-time">${escapeHtml(e.time)}</div>
+        <div class="rb-entry-right">
+          <div class="rb-action">${escapeHtml(e.action)}</div>
+          ${e.note ? `<div class="rb-note">${escapeHtml(e.note)}</div>` : ''}
+        </div>
+      </div>`).join('');
+
+    // Pull spots from stops for this day
+    const stop = stops.find(s => s.d === day.d);
+    const foodSpots = stop ? stop.spots.filter(s => s.tag === 'food') : [];
+    const placeList = stop ? (stop.places || []) : [];
+
+    const spotsHtml = (foodSpots.length || placeList.length) ? `
+      <div class="rb-spots">
+        ${placeList.length ? `<div class="rb-spots-title">📍 景点</div>` + placeList.map(p => `
+          <div class="rb-spot-item">
+            <span class="rb-spot-name">${escapeHtml(p.name)}</span>
+            ${p.desc ? `<div class="rb-note">${escapeHtml(p.desc)}</div>` : ''}
+          </div>`).join('') : ''}
+        ${foodSpots.length ? `<div class="rb-spots-title">🍽️ 美食</div>` + foodSpots.map(f => `
+          <div class="rb-spot-item">
+            <span class="rb-spot-name">${escapeHtml(f.name)}</span>
+            ${f.desc ? `<div class="rb-note">${escapeHtml(f.desc)}</div>` : ''}
+          </div>`).join('') : ''}
+      </div>` : '';
+
+    return `
+      <div class="rb-day">
+        <div class="rb-day-head">
+          <div class="rb-day-date">${escapeHtml(day.d)}</div>
+          <div class="rb-day-city">${escapeHtml(day.city)}</div>
+          <div class="rb-day-km">${escapeHtml(day.km)}</div>
+        </div>
+        ${weatherHtml}
+        <div class="rb-entries">${entries}</div>
+        ${spotsHtml}
+      </div>`;
+  }).join('');
+}
+
+// Open / close
+document.getElementById('rb-open').addEventListener('click', () => {
+  buildRoadbook();
+  document.getElementById('rb-overlay').classList.add('show');
+  const panel = document.getElementById('rb-panel');
+  panel.classList.add('open');
+  panel.style.transform = 'translateX(0)';
+  panel.setAttribute('aria-hidden', 'false');
+  document.getElementById('rb-open').setAttribute('aria-expanded', 'true');
+});
+function closeRb() {
+  document.getElementById('rb-overlay').classList.remove('show');
+  const panel = document.getElementById('rb-panel');
+  panel.classList.remove('open');
+  panel.style.transform = 'translateX(-100%)';
+  panel.setAttribute('aria-hidden', 'true');
+  document.getElementById('rb-open').setAttribute('aria-expanded', 'false');
+}
+document.getElementById('rb-close').addEventListener('click', closeRb);
+document.getElementById('rb-overlay').addEventListener('click', closeRb);
+
+/* ════════ ANIMATE COUNTER ════════ */
+function animateCounter(el, target, suffix) {
+  const dur = 1100, t0 = performance.now();
+  const tick = (now) => {
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 4);
+    el.textContent = Math.round(ease * target) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = Math.round(target) + suffix;
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ════════ INIT MAP ════════ */
+const sc = document.createElement('script');
+sc.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}&plugin=AMap.Driving`;
+sc.onload = () => {
+  map = new AMap.Map('map', { zoom:5, center:[115,33], mapStyle:'amap://styles/whitesmoke' });
+
+  // 1) City number markers
+  stops.forEach((s, i) => {
+    const cityCollisionShift = markerShift(i, 46);
+    const weatherCollisionShift = markerShift(i, 112);
+    const mkEl = document.createElement('div');
+    mkEl.className = `mk ${typeClass(s.type)}`;
+    mkEl.textContent = i + 1;
+    mkEl.title = `${i + 1} · ${s.name}，点击查看详情`;
+    mkEl.setAttribute('role', 'button');
+    mkEl.setAttribute('aria-label', mkEl.title);
+    mkEl.tabIndex = 0;
+    mkEl.dataset.stopIndex = String(i);
+    const activateMarker = event => {
+      event.stopPropagation();
+      selectCity(i);
+    };
+    mkEl.addEventListener('click', activateMarker);
+    mkEl.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      activateMarker(event);
+    });
+    const mk = new AMap.Marker({
+      position:[s.lng, s.lat], content:mkEl,
+      offset:new AMap.Pixel(-16 + cityCollisionShift, -16), map, zIndex: 100 + i
+    });
+    mk._el = mkEl;
+    cityMarkers.push(mk);
+
+    // 2) Weather chip marker (only render when a real forecast exists)
+    const w = s.weather || weather[s.d];
+    if (hasForecast(w)) {
+      const wEl = document.createElement('div');
+      wEl.className = 'wmk';
+      wEl.innerHTML = `
+        <div class="wmk-row">
+          <span class="ico">${escapeHtml(w.icon)}</span>
+          <span class="thi">${escapeHtml(w.hi)}°</span>
+          <span class="t">/</span>
+          <span class="tlo">${escapeHtml(w.lo)}°</span>
+        </div>
+        <div class="wmk-date">${escapeHtml(s.d)}</div>
+      `;
+      const wMk = new AMap.Marker({
+        position:[s.lng, s.lat], content:wEl,
+        offset:new AMap.Pixel(-48 + weatherCollisionShift, -78), map, zIndex: 90 + i, bubble:true
+      });
+      wMk._el = wEl;
+      wMk._stopIdx = i;
+      weatherMarkers.push(wMk);
+
+    }
+
+    // 3) Planning warning is independent from weather availability
+    const alert = planningAlert(s, w);
+    if (alert) {
+      const warnEl = document.createElement('div');
+      warnEl.className = 'rain-warn';
+      warnEl.dataset.kind = alert.kind;
+      warnEl.dataset.stopIndex = String(i);
+      warnEl.textContent = `⚠️ ${alert.label}`;
+      warnEl.title = alert.description;
+      warnEl.setAttribute('aria-label', `${alert.label}：${alert.description}`);
+      const warnMk = new AMap.Marker({
+        position:[s.lng, s.lat], content:warnEl,
+        offset:new AMap.Pixel(weatherCollisionShift + warningClusterShift(i), hasForecast(w) ? -108 : -58), map, zIndex: 110 + i, bubble:true
+      });
+      warnMarkers.push(warnMk);
+    }
+  });
+
+  // 4) Waypoint stop markers (dinner / overnight)
+  waypoints.forEach(wp => {
+    const wrapEl = document.createElement('div');
+    wrapEl.className = 'mk-stop-wrap';
+    wrapEl.innerHTML = `
+      <div class="mk-stop">${escapeHtml(wp.icon)}</div>
+      <div class="mk-stop-label">${escapeHtml(wp.label)}</div>
+    `;
+    new AMap.Marker({
+      position:[wp.lng, wp.lat], content:wrapEl,
+      offset:new AMap.Pixel(-11, -11), map, zIndex: 85, bubble:true
+    });
+  });
+
+  // 5) Inter-city routes
+  const segs = [];
+  for (let i = 0; i < stops.length-1; i++) {
+    if (stops[i].lng===stops[i+1].lng && stops[i].lat===stops[i+1].lat) continue;
+    segs.push({ a:stops[i], b:stops[i+1], fromIdx:i, toIdx:i+1, bi:i+1 });
+  }
+
+  let routeIndex = 0;
+  function loadNextRoute() {
+    if (routeIndex >= segs.length) {
+      // 路线后台加载较慢时，不能在用户已经打开某一天后强行拉回总览。
+      if (activeIdx === -1 && activeRouteOptionId === primaryRouteId) fitRouteOverview();
+      return;
+    }
+    const seg = segs[routeIndex++];
+    const drv = new AMap.Driving({ map:null, hideMarkers:true, autoFitView:false });
+    drv.search([seg.a.lng,seg.a.lat],[seg.b.lng,seg.b.lat], (st,res) => {
+      if (st==='complete' && res.routes?.[0]) {
+        const r = res.routes[0];
+        const path = [];
+        r.steps.forEach(st => st.path.forEach(p => path.push([p.lng,p.lat])));
+        const poly = new AMap.Polyline({
+          path, strokeColor:typeColor(seg.b.type), strokeWeight:4,
+          strokeOpacity:activeRouteOptionId === primaryRouteId ? .85 : .12, showDir:true, map
+        });
+        ovPolylines.push({ poly, fromIdx:seg.fromIdx, toIdx:seg.toIdx });
+      } else {
+        const poly = new AMap.Polyline({
+          path:[[seg.a.lng,seg.a.lat],[seg.b.lng,seg.b.lat]],
+          strokeColor:typeColor(seg.b.type), strokeWeight:2.5,
+          strokeOpacity:activeRouteOptionId === primaryRouteId ? .55 : .1,
+          strokeStyle:'dashed', strokeDasharray:[12,6], map
+        });
+        ovPolylines.push({ poly, fromIdx:seg.fromIdx, toIdx:seg.toIdx });
+      }
+      // 个人版高德 Web API QPS 较低，分段串行请求，避免并发丢线。
+      setTimeout(loadNextRoute, 450);
+    });
+  }
+  loadNextRoute();
+
+  map.on('zoomend', () => {
+    if (activeIdx !== -1 && map.getZoom() < 7) deselect();
+  });
+};
+
+const hasAmapConfig = AMAP_KEY && AMAP_SECRET &&
+  !AMAP_KEY.startsWith('YOUR_') && !AMAP_SECRET.startsWith('YOUR_');
+
+if (!hasTripData) {
+  // 显式空态：未生成行程时不初始化地图，提示先运行流水线
+  document.getElementById('tl-eyebrow').textContent = '等待生成';
+  document.getElementById('tl-route-title').textContent = '尚未生成行程';
+  document.getElementById('rb-eyebrow').textContent = '等待生成';
+  document.getElementById('rb-route-title').textContent = '尚未生成行程';
+  document.getElementById('map-status').textContent = '路线待生成';
+  document.getElementById('map-status').className = 'agent-state pending';
+  document.getElementById('weather-status').textContent = '天气待生成';
+  document.getElementById('community-status').textContent = '社区来源待生成';
+  document.getElementById('evidence-status').textContent = '地点证据待生成';
+  document.getElementById('tl-items').innerHTML = `
+    <div style="padding:22px 20px;font-size:13px;line-height:1.8;color:var(--gray)">
+      尚未生成行程。<br>请先在 Skill 根目录运行<br><code style="color:var(--teal);font-family:monospace">node scripts/run-trip.mjs</code><br>生成 trip.generated.js 后刷新本页。
+    </div>`;
+  document.getElementById('map').innerHTML = `
+    <div class="map-config-note"><div class="map-config-card">
+      <strong>尚未生成行程</strong>
+      <p>请先在 Skill 根目录运行 <code>node scripts/run-trip.mjs</code> 生成行程数据，再刷新本页查看交互地图与逐日路书。</p>
+    </div></div>`;
+} else if (hasAmapConfig) {
+  sc.onerror = () => {
+    document.getElementById('map').innerHTML = `
+      <div class="map-config-note"><div class="map-config-card">
+        <strong>地图加载失败</strong>
+        <p>请检查高德 Web 端 JS API Key、安全密钥和域名白名单配置。</p>
+      </div></div>`;
+  };
+  document.head.appendChild(sc);
+} else {
+  document.getElementById('map').innerHTML = `
+    <div class="map-config-note"><div class="map-config-card">
+      <strong>路线代码已就绪</strong>
+      <p>在 <code>index.html</code> 中配置高德 Web 端 JS API Key 和安全密钥后，地图、城市标记与驾车路线会自动加载。左侧时间轴和文字路书无需 Key 即可使用。</p>
+    </div></div>`;
+}
+
+/* ════════ RESIZE HANDLER ════════ */
+window.addEventListener('resize', () => {
+  if (!isMobile() && mobileSheet.classList.contains('open')) {
+    hideMobileSheet();
+  }
+});
+</script>
+</body></html>
